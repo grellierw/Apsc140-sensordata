@@ -11,7 +11,14 @@
 #define RFM69_CS         A5
 #define RFM69_INT        1
 #define LED              8
+#define VBATPIN          A9
 
+//define headers for each measurement
+#define TEMP_HEADER      0x01
+#define PRESSURE_HEADER  0x02
+#define HUMIDITY_HEADER  0x03
+#define GAS_HEADER       0x04
+#define VOLTAGE_HEADER   0x05
 
 RH_RF69 rf69(RFM69_CS, RFM69_INT);
 
@@ -19,7 +26,7 @@ Adafruit_BME680 bme;
 
 
 
-void convertRounding(uint32_t input, uint8_t pressure[4]) {
+void convertRounding(uint32_t input, uint8_t array[4]) {
     // convert the uint32_t to a float to enable proper rounding
     float temp = static_cast<float>(input);
 
@@ -27,7 +34,7 @@ void convertRounding(uint32_t input, uint8_t pressure[4]) {
     uint32_t rounded = static_cast<uint32_t>(temp + 0.5f);
 
     // use memcpy to copy the rounded uint32_t into the output buffer
-    memcpy(pressure, &rounded, sizeof(uint32_t));
+    memcpy(array + 1, &rounded, sizeof(uint32_t));
 }
 
 void sendData(const uint8_t* data, size_t len) {
@@ -92,26 +99,37 @@ void loop() {
   // Send a message to rf69_server
   
   
-  // Send temperature
-  float tempInput = bme.temperature;
+  // Send temperature OLD 
+  /* float tempInput = bme.temperature;
   uint8_t dataTemp[sizeof(tempInput)];
   memcpy(dataTemp, &tempInput, sizeof(float));
+  sendData(dataTemp, sizeof(dataTemp)); 
+  */
+
+  // Send temperature
+  float tempInput = bme.temperature;
+  uint8_t dataTemp[sizeof(tempInput) + 1];          // Add an extra byte for the header
+  dataTemp[0] = TEMP_HEADER;                        // Add the header
+  memcpy(dataTemp + 1, &tempInput, sizeof(float));  // Copy the temperature data
   sendData(dataTemp, sizeof(dataTemp));
 
   Serial.println(tempInput);
 
-  // Send pressure
+ 
+  // Send pressure  
   uint32_t pressureInput = bme.pressure;
   uint8_t pressure[sizeof(pressureInput)];
+  pressure[0] = PRESSURE_HEADER;
   convertRounding(pressureInput, pressure);
-  sendData(pressure, sizeof(pressure));
-  
+  sendData(pressure, sizeof(pressure));   
+
   Serial.println(pressureInput);
 
   // Send Humidity
   float humidityInput = bme.humidity;
-  uint8_t dataHumidity[sizeof(humidityInput)];
-  memcpy(dataHumidity, &humidityInput, sizeof(float));
+  uint8_t dataHumidity[sizeof(humidityInput) + 1];
+  dataHumidity[0] = HUMIDITY_HEADER;
+  memcpy(dataHumidity + 1, &humidityInput, sizeof(float));
   sendData(dataHumidity, sizeof(dataHumidity));
 
   Serial.println(humidityInput);
@@ -119,10 +137,35 @@ void loop() {
   // Send Gas Data
   uint32_t gasInput = bme.gas_resistance;
   uint8_t gas[sizeof(gasInput)];
+  gas[0] = GAS_HEADER;
   convertRounding(gasInput, gas);
   sendData(gas, sizeof(gas));
   
   Serial.println(gasInput);
+
+  // Send Voltage Data 
+
+  float measuredvbat = analogRead(VBATPIN);
+  measuredvbat *= 2; // we divided by 2, so multiply back
+  measuredvbat *= 3.3; // Multiply by 3.3V, our reference voltage
+  measuredvbat /= 1024; // convert to voltage
+  uint8_t dataVoltage[sizeof(measuredvbat) + 1];
+  dataVoltage[0] = VOLTAGE_HEADER;
+  memcpy(dataVoltage + 1, &measuredvbat, sizeof(float));
+  sendData(dataVoltage, sizeof(dataVoltage));
+
+  Serial.print("VBat: " ); Serial.println(measuredvbat);
+
+
+
+
+
+
+
+
+
+
+
 
 
 
