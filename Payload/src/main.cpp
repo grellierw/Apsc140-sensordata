@@ -30,9 +30,10 @@ void convertRounding(uint32_t input, uint8_t pressure[4]) {
     memcpy(pressure, &rounded, sizeof(uint32_t));
 }
 
-
-
-
+void sendData(const uint8_t* data, size_t len) {
+    rf69.send(data, len);
+    rf69.waitPacketSent();
+}
 
 
 
@@ -91,36 +92,77 @@ void loop() {
   // Send a message to rf69_server
   
   
-  
-// send temp
-  float f = bme.temperature;
-  uint8_t data[sizeof(f)];
-  memcpy(data, &f, sizeof(float));
+  // Send temperature
+  float tempInput = bme.temperature;
+  uint8_t dataTemp[sizeof(tempInput)];
+  memcpy(dataTemp, &tempInput, sizeof(float));
+  sendData(dataTemp, sizeof(dataTemp));
 
-  Serial.println(f);
+  Serial.println(tempInput);
 
- // rf69.send(data, sizeof(data));
-  //rf69.waitPacketSent();
+  // Send pressure
+  uint32_t pressureInput = bme.pressure;
+  uint8_t pressure[sizeof(pressureInput)];
+  convertRounding(pressureInput, pressure);
+  sendData(pressure, sizeof(pressure));
   
+  Serial.println(pressureInput);
+
+  // Send Humidity
+  float humidityInput = bme.humidity;
+  uint8_t dataHumidity[sizeof(humidityInput)];
+  memcpy(dataHumidity, &humidityInput, sizeof(float));
+  sendData(dataHumidity, sizeof(dataHumidity));
+
+  Serial.println(humidityInput);
+
+  // Send Gas Data
+  uint32_t gasInput = bme.gas_resistance;
+  uint8_t gas[sizeof(gasInput)];
+  convertRounding(gasInput, gas);
+  sendData(gas, sizeof(gas));
+  
+  Serial.println(gasInput);
+
+
+
+
+// OLD send temp 
+/*
+float temp = bme.temperature;
+uint8_t data[sizeof(temp)];
+memcpy(data, &temp, sizeof(float));
+rf69.send(data, sizeof(data));
+rf69.waitPacketSent();
+*/
 //end temp
 
-
-
-// start pressure
-
+// OLD start pressure
+/*
 uint32_t input = bme.pressure;
 uint8_t pressure[sizeof(float)];
 convertRounding(input, pressure);
 Serial.println(bme.pressure);
 rf69.send(pressure, sizeof(pressure));
 rf69.waitPacketSent();
-
+*/
 // end pressure
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
   Serial.print("rssi: "); Serial.println(rf69.lastRssi());
-
-
 
 
   uint8_t buf[RH_RF69_MAX_MESSAGE_LEN];
