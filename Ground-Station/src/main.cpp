@@ -8,6 +8,7 @@
 // Demonstrates the use of AES encryption, setting the frequency and modem 
 // configuration
 
+#include <fstream> //for printing to txt
 #include <SPI.h>
 #include <RH_RF69.h>
 
@@ -33,6 +34,8 @@
 RH_RF69 rf69(RFM69_CS, RFM69_INT);
 
 int16_t packetnum = 0;  // packet counter, we increment per xmission
+
+using namespace std; //for printing to txt
 
 void Blink(byte PIN, byte DELAY_MS, byte loops);
 
@@ -83,6 +86,8 @@ void setup()
 
 void loop() {
  if (rf69.available()) {
+
+    outfile << "This is a test" << endl;
 
      /*
      uint8_t buf[RH_RF69_MAX_MESSAGE_LEN];        //creates variable to store incoming data 
@@ -192,6 +197,8 @@ else
     } else {
       Serial.println("Receive failed");
     }
+
+    outfile.close();
   }
 
 

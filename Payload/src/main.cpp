@@ -34,7 +34,7 @@ void convertRounding(uint32_t input, uint8_t array[4]) {
     uint32_t rounded = static_cast<uint32_t>(temp + 0.5f);
 
     // use memcpy to copy the rounded uint32_t into the output buffer
-    memcpy(array + 1, &rounded, sizeof(uint32_t));
+    memcpy(array, &rounded, sizeof(uint32_t));
 }
 
 void sendData(const uint8_t* data, size_t len) {
@@ -59,14 +59,14 @@ void setup() {
   digitalWrite(RFM69_RST, LOW);
   delay(10);
 
-
+/*
   Serial.println("start");
   if(!bme.begin()) {
     Serial.println("BME failed to init");
     while(1);
   }
   Serial.println("start1");
-
+*/
   if(!rf69.init()){
     Serial.println("fail");
     Serial.println("RFM69 failed to init");
@@ -80,13 +80,16 @@ void setup() {
 Serial.println("mid");
   rf69.setTxPower(15, true);
 
+/*
 // Set up oversampling and filter initialization
   bme.setTemperatureOversampling(BME680_OS_8X);
   bme.setHumidityOversampling(BME680_OS_2X);
   bme.setPressureOversampling(BME680_OS_4X);
   bme.setIIRFilterSize(BME680_FILTER_SIZE_3);
   bme.setGasHeater(320, 150); // 320*C for 150 ms
-  Serial.println("finish");
+  Serial.println("finish"); 
+  
+*/
 }
 
 
@@ -113,8 +116,9 @@ void loop() {
   memcpy(dataTemp + 1, &tempInput, sizeof(float));  // Copy the temperature data
   sendData(dataTemp, sizeof(dataTemp));
 
+  Serial.print("Temperature: ");
   Serial.println(tempInput);
-
+  
  
   // Send pressure  
   uint32_t pressureInput = bme.pressure;
@@ -123,6 +127,7 @@ void loop() {
   convertRounding(pressureInput, pressure);
   sendData(pressure, sizeof(pressure));   
 
+  Serial.print("Pressure: ");
   Serial.println(pressureInput);
 
   // Send Humidity
@@ -132,6 +137,7 @@ void loop() {
   memcpy(dataHumidity + 1, &humidityInput, sizeof(float));
   sendData(dataHumidity, sizeof(dataHumidity));
 
+  Serial.print("Humidity: ");
   Serial.println(humidityInput);
 
   // Send Gas Data
@@ -141,6 +147,7 @@ void loop() {
   convertRounding(gasInput, gas);
   sendData(gas, sizeof(gas));
   
+  Serial.print("Gas Resistance: ");
   Serial.println(gasInput);
 
   // Send Voltage Data 
@@ -154,7 +161,8 @@ void loop() {
   memcpy(dataVoltage + 1, &measuredvbat, sizeof(float));
   sendData(dataVoltage, sizeof(dataVoltage));
 
-  Serial.print("VBat: " ); Serial.println(measuredvbat);
+  Serial.print("VBat: " ); 
+  Serial.println(measuredvbat);
 
 
 
