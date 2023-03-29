@@ -15,7 +15,7 @@
 /************ Radio Setup ***************/
 
 // Change to 434.0 or other frequency, must match RX's freq!
-#define RF69_FREQ 915.0
+#define RF69_FREQ       915.0
 
 // Feather 32u4 w/Radio
   #define RFM69_CS      A5
@@ -85,11 +85,13 @@ void setup()
 
 
 void loop() {
+  
  if (rf69.available()) {
 
    // outfile << "This is a test" << endl;
 
-     /* OLD CODE
+     //OLD CODE
+     if (rf69.available()) {
      uint8_t buf[RH_RF69_MAX_MESSAGE_LEN];        //creates variable to store incoming data 
      uint8_t len = sizeof(buf);			              //creates variable to store length of data
    
@@ -98,11 +100,11 @@ void loop() {
       buf[len] = 0;
 
       // Receiving Pressure
-      uint32_t pressure;			                    // Variable for pressure
+      /* uint32_t pressure;			                    // Variable for pressure
       memcpy(&pressure, buf, sizeof(uint32_t));   // Converts from uint8_t to a uint32_t
       Serial.print("Received pressure:");
       Serial.println(pressure);
-
+      */
       // Receiving Temperature
       float temp;					                  // Variable for temperature
       memcpy(&temp, buf, sizeof(float));		// Converts from uint8_t to a float 
@@ -116,8 +118,8 @@ void loop() {
       else {
       Serial.println("Receive failed");
       } 
-      */
-  
+     
+/*
 uint8_t buf[RH_RF69_MAX_MESSAGE_LEN];
 uint8_t len = sizeof(buf);
 
@@ -186,7 +188,7 @@ else
 {
   Serial.println("No reply, is rf69_server running?");
 }
-
+*/
 Serial.print("RSSI: ");				        // Prints the Radio Signal Strength
       Serial.println(rf69.lastRssi(), DEC);
 
@@ -208,7 +210,8 @@ Serial.print("RSSI: ");				        // Prints the Radio Signal Strength
       Serial.println("Receive failed");
     }
   delay(1000);
-   // outfile.close();
+}
+   // outfile.close(); 
   }
 
 

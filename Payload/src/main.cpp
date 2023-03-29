@@ -15,9 +15,9 @@
 
 RH_RF69 rf69(RFM69_CS, RFM69_INT);
 
-#define BME_CS           A4
+//#define BME_CS           A4
 
-Adafruit_BME680 bme(BME_CS);
+Adafruit_BME680 bme;
 
 
 //define headers for each measurement
@@ -41,8 +41,10 @@ void convertRounding(uint32_t input, uint8_t array[4]) {
 }
 
 void sendData(const uint8_t* data, size_t len) {
+   // digitalWrite(RFM69_CS, HIGH);
     rf69.send(data, len);
     rf69.waitPacketSent();
+   // digitalWrite(RFM69_CS, LOW);
 }
 
 
@@ -54,6 +56,9 @@ void setup() {
   pinMode(RFM69_RST, OUTPUT);
   digitalWrite(RFM69_RST, LOW);
 
+  pinMode(RFM69_CS, OUTPUT);
+  //pinMode(BME_CS, OUTPUT);
+  
   while(!Serial);
 
   // manual reset
@@ -63,12 +68,6 @@ void setup() {
   delay(10);
 
 
-  Serial.println("start");
-  if(!bme.begin()) {
-    Serial.println("BME failed to init");
-    while(1);
-  }
-  Serial.println("start");
 
   if(!rf69.init()){
     Serial.println("fail");
@@ -82,6 +81,16 @@ void setup() {
   }
 Serial.println("mid");
   rf69.setTxPower(15, true);
+  Serial.println("start");
+  delay(1000);
+
+  //digitalWrite(RFM69_CS, LOW);
+
+  if(!bme.begin()) {
+    Serial.println("BME failed to init");
+    while(1);
+  }
+  Serial.println("start");
 
 
 // Set up oversampling and filter initialization
@@ -92,15 +101,20 @@ Serial.println("mid");
   bme.setGasHeater(320, 150); // 320*C for 150 ms
   Serial.println("finish"); 
   
-
+ // digitalWrite(RFM69_CS, LOW);
 }
 
 
 /******************LOOP*******************/
+
 void loop() {
   
+
   //updates bme.data variables
+  //digitalWrite(BME_CS, HIGH);
   bme.performReading();
+  //digitalWrite(BME_CS, LOW);
+
 
   Serial.println("Sending to rf69_server"); // Send a message to rf69_server
   
@@ -111,19 +125,22 @@ void loop() {
   memcpy(dataTemp, &tempInput, sizeof(float));
   sendData(dataTemp, sizeof(dataTemp)); 
   */
-
+ /*
   // Send temperature
   float tempInput = bme.temperature;
+              Serial.println(tempInput);
   uint8_t dataTemp[sizeof(tempInput) + 1];          // Add an extra byte for the header
   dataTemp[0] = TEMP_HEADER;                        // Add the header
   memcpy(&dataTemp[1], &tempInput, sizeof(float));  // Copy the temperature data
-  sendData(dataTemp, sizeof(dataTemp));
-
-  Serial.print("Temperature: ");
-  Serial.println(tempInput);
-  
-  
-
+              Serial.println(tempInput);
+  //sendData(dataTemp, sizeof(dataTemp));
+              Serial.println(tempInput);
+              Serial.print("Temperature: ");
+              Serial.println(tempInput);
+  //digitalWrite(RFM69_CS, HIGH);
+        rf69.send(dataTemp, sizeof(dataTemp));
+        rf69.waitPacketSent();
+  //digitalWrite(RFM69_CS, LOW);
   
   // Send pressure  
   uint32_t pressureInput = bme.pressure;
@@ -175,7 +192,7 @@ void loop() {
   Serial.print("VBat: " ); 
   Serial.println(measuredvbat);
 
-
+  */
 
 
 
@@ -183,13 +200,16 @@ void loop() {
 
 
 // OLD send temp 
-/*
+
 float temp = bme.temperature;
 uint8_t data[sizeof(temp)];
 memcpy(data, &temp, sizeof(float));
 rf69.send(data, sizeof(data));
 rf69.waitPacketSent();
-*/
+
+Serial.print("Temperature: ");
+Serial.println(temp);
+
 //end temp
 
 // OLD start pressure
