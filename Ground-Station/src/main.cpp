@@ -8,7 +8,7 @@
 // Demonstrates the use of AES encryption, setting the frequency and modem 
 // configuration
 
-#include <fstream> //for printing to txt
+//#include <fstream> //for printing to txt
 #include <SPI.h>
 #include <RH_RF69.h>
 
@@ -87,9 +87,9 @@ void setup()
 void loop() {
  if (rf69.available()) {
 
-    outfile << "This is a test" << endl;
+   // outfile << "This is a test" << endl;
 
-     /*
+     /* OLD CODE
      uint8_t buf[RH_RF69_MAX_MESSAGE_LEN];        //creates variable to store incoming data 
      uint8_t len = sizeof(buf);			              //creates variable to store length of data
    
@@ -133,12 +133,16 @@ if (rf69.waitAvailableTimeout(500))
         float tempData;
         memcpy(&tempData, buf + 1, sizeof(float));
         // Do something with the temperature data
+        Serial.print("Received temperature:");
+        Serial.println(tempData);
         break;
 
       case PRESSURE_HEADER:
         // Extract pressure data from the rest of the byte array
         uint32_t pressureData;
         memcpy(&pressureData, buf + 1, sizeof(uint32_t));
+        Serial.print("Received pressure:");
+        Serial.println(pressureData);
         // Do something with the pressure data
         break;
 
@@ -147,6 +151,8 @@ if (rf69.waitAvailableTimeout(500))
         float humidityData;
         memcpy(&humidityData, buf + 1, sizeof(float));
         // Do something with the humidity data
+        Serial.print("Received humidity:");
+        Serial.println(humidityData);
         break;
 
       case GAS_HEADER:
@@ -154,13 +160,16 @@ if (rf69.waitAvailableTimeout(500))
         uint32_t gasData;
         memcpy(&gasData, buf + 1, sizeof(uint32_t));
         // Do something with the gas data
+        Serial.print("Received Gas:");
+        Serial.println(gasData);
         break;
 
       case VOLTAGE_HEADER:
 
         uint32_t voltageData;
         memcpy(&voltageData, buf + 1, sizeof(uint32_t));
-
+        Serial.print("Battery:");
+        Serial.println(voltageData);
         break;
 
       default:
@@ -178,7 +187,8 @@ else
   Serial.println("No reply, is rf69_server running?");
 }
 
-
+Serial.print("RSSI: ");				        // Prints the Radio Signal Strength
+      Serial.println(rf69.lastRssi(), DEC);
 
 
 
@@ -197,8 +207,8 @@ else
     } else {
       Serial.println("Receive failed");
     }
-
-    outfile.close();
+  delay(1000);
+   // outfile.close();
   }
 
 

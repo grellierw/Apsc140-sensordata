@@ -13,6 +13,13 @@
 #define LED              8
 #define VBATPIN          A9
 
+RH_RF69 rf69(RFM69_CS, RFM69_INT);
+
+#define BME_CS           A4
+
+Adafruit_BME680 bme(BME_CS);
+
+
 //define headers for each measurement
 #define TEMP_HEADER      0x01
 #define PRESSURE_HEADER  0x02
@@ -20,9 +27,6 @@
 #define GAS_HEADER       0x04
 #define VOLTAGE_HEADER   0x05
 
-RH_RF69 rf69(RFM69_CS, RFM69_INT);
-
-Adafruit_BME680 bme;
 
 /******************FUNCTIONS********************/
 void convertRounding(uint32_t input, uint8_t array[4]) {
@@ -50,7 +54,7 @@ void setup() {
   pinMode(RFM69_RST, OUTPUT);
   digitalWrite(RFM69_RST, LOW);
 
- // while(!Serial);
+  while(!Serial);
 
   // manual reset
   digitalWrite(RFM69_RST, HIGH);
@@ -58,14 +62,14 @@ void setup() {
   digitalWrite(RFM69_RST, LOW);
   delay(10);
 
-/*
+
   Serial.println("start");
   if(!bme.begin()) {
     Serial.println("BME failed to init");
     while(1);
   }
-  Serial.println("start1");
-*/
+  Serial.println("start");
+
   if(!rf69.init()){
     Serial.println("fail");
     Serial.println("RFM69 failed to init");
@@ -79,7 +83,7 @@ void setup() {
 Serial.println("mid");
   rf69.setTxPower(15, true);
 
-/*
+
 // Set up oversampling and filter initialization
   bme.setTemperatureOversampling(BME680_OS_8X);
   bme.setHumidityOversampling(BME680_OS_2X);
@@ -88,7 +92,7 @@ Serial.println("mid");
   bme.setGasHeater(320, 150); // 320*C for 150 ms
   Serial.println("finish"); 
   
-*/
+
 }
 
 
@@ -122,7 +126,7 @@ void loop() {
 
   
   // Send pressure  
-  uint32_t pressureInput = 12;//bme.pressure;
+  uint32_t pressureInput = bme.pressure;
   uint8_t pressure[sizeof(pressureInput)];
   pressure[0] = PRESSURE_HEADER;
   convertRounding(pressureInput, pressure);
