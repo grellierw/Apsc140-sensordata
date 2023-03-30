@@ -42,7 +42,7 @@ void Blink(byte PIN, byte DELAY_MS, byte loops);
 void setup() 
 {
   Serial.begin(9600);
-  //while (!Serial) { delay(1); } // wait until serial console is open, remove if not tethered to computer
+  while (!Serial) { delay(1); } // wait until serial console is open, remove if not tethered to computer
 
   pinMode(LED, OUTPUT);     
   pinMode(RFM69_RST, OUTPUT);
@@ -63,8 +63,7 @@ void setup()
   }
   Serial.println("RFM69 radio init OK!");
   
-  // Defaults after init are 434.0MHz, modulation GFSK_Rb250Fd250, +13dbM (for low power module)
-  // No encryption
+
   if (!rf69.setFrequency(RF69_FREQ)) {
     Serial.println("setFrequency failed");
   }
@@ -73,10 +72,6 @@ void setup()
   // ishighpowermodule flag set like this:
   rf69.setTxPower(20, true);  // range from 14-20 for power, 2nd arg must be true for 69HCW
 
-  // The encryption key has to be the same as the one in the server
-  uint8_t key[] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
-                    0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
-  rf69.setEncryptionKey(key);
   
   pinMode(LED, OUTPUT);
 
@@ -85,26 +80,28 @@ void setup()
 
 
 void loop() {
-  
- if (rf69.available()) {
+  //Serial.println("help");
+ 
 
    // outfile << "This is a test" << endl;
-
+ 
      //OLD CODE
+     /*
      if (rf69.available()) {
      uint8_t buf[RH_RF69_MAX_MESSAGE_LEN];        //creates variable to store incoming data 
      uint8_t len = sizeof(buf);			              //creates variable to store length of data
-   
+    
       if (rf69.recv(buf, &len)) { 		           	//receives information
+
       if (!len) return;
       buf[len] = 0;
-
+      
       // Receiving Pressure
       /* uint32_t pressure;			                    // Variable for pressure
       memcpy(&pressure, buf, sizeof(uint32_t));   // Converts from uint8_t to a uint32_t
       Serial.print("Received pressure:");
       Serial.println(pressure);
-      */
+      *
       // Receiving Temperature
       float temp;					                  // Variable for temperature
       memcpy(&temp, buf, sizeof(float));		// Converts from uint8_t to a float 
@@ -119,12 +116,13 @@ void loop() {
       Serial.println("Receive failed");
       } 
      
-/*
+*/ //old code end
 uint8_t buf[RH_RF69_MAX_MESSAGE_LEN];
 uint8_t len = sizeof(buf);
+bool hasReceived = false;
+if (rf69.available()) {
 
-if (rf69.waitAvailableTimeout(500))
-{ 
+
   // Should be a reply message for us now   
   if (rf69.recv(buf, &len))
   {
@@ -175,22 +173,16 @@ if (rf69.waitAvailableTimeout(500))
         break;
 
       default:
-        // Unknown header, do nothing
+         Serial.println("No preamble");
         break;
     }
-  }
-  else
-  {
-    Serial.println("recv failed");
-  }
-}
-else
-{
-  Serial.println("No reply, is rf69_server running?");
-}
-*/
-Serial.print("RSSI: ");				        // Prints the Radio Signal Strength
+      // Prints the Radio Signal Strength
+      Serial.print("RSSI: ");
       Serial.println(rf69.lastRssi(), DEC);
+      hasReceived = true;
+  }
+} else
+    Serial.println("recv failed");
 
 
 
@@ -198,7 +190,9 @@ Serial.print("RSSI: ");				        // Prints the Radio Signal Strength
 
 
 
-      if (strstr((char *)buf, "Hello World")) {
+
+
+      if (hasReceived) {
         // Send a reply!
         uint8_t data[] = "And hello back to you";
         rf69.send(data, sizeof(data));
@@ -206,13 +200,10 @@ Serial.print("RSSI: ");				        // Prints the Radio Signal Strength
         Serial.println("Sent a reply");
         Blink(LED, 40, 3); //blink LED 3 times, 40ms between blinks
       }
-    } else {
-      Serial.println("Receive failed");
-    }
-  delay(1000);
+      delay(1000);
 }
    // outfile.close(); 
-  }
+  
 
 
 
