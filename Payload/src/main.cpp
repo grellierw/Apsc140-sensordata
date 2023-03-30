@@ -44,6 +44,8 @@ void sendData(const uint8_t* data, size_t len) {
    // digitalWrite(RFM69_CS, HIGH);
     rf69.send(data, len);
     rf69.waitPacketSent();
+    Serial.println("Sent");
+    delay(3000);
    // digitalWrite(RFM69_CS, LOW);
 }
 
@@ -59,7 +61,7 @@ void setup() {
   pinMode(RFM69_CS, OUTPUT);
   //pinMode(BME_CS, OUTPUT);
   
-  while(!Serial);
+  //while(!Serial);
 
   // manual reset
   digitalWrite(RFM69_RST, HIGH);
@@ -125,37 +127,37 @@ void loop() {
   memcpy(dataTemp, &tempInput, sizeof(float));
   sendData(dataTemp, sizeof(dataTemp)); 
   */
- /*
+ 
   // Send temperature
   float tempInput = bme.temperature;
-              Serial.println(tempInput);
   uint8_t dataTemp[sizeof(tempInput) + 1];          // Add an extra byte for the header
   dataTemp[0] = TEMP_HEADER;                        // Add the header
-  memcpy(&dataTemp[1], &tempInput, sizeof(float));  // Copy the temperature data
-              Serial.println(tempInput);
-  //sendData(dataTemp, sizeof(dataTemp));
-              Serial.println(tempInput);
-              Serial.print("Temperature: ");
-              Serial.println(tempInput);
+  memcpy(&dataTemp[1], &tempInput, sizeof(float)); 
+  Serial.print("Temperature: ");
+  Serial.println(tempInput); // Copy the temperature data
+  sendData(dataTemp, sizeof(dataTemp));
+              
   //digitalWrite(RFM69_CS, HIGH);
-        rf69.send(dataTemp, sizeof(dataTemp));
-        rf69.waitPacketSent();
+       // rf69.send(dataTemp, sizeof(dataTemp));
+      //  rf69.waitPacketSent();
   //digitalWrite(RFM69_CS, LOW);
   
   // Send pressure  
   uint32_t pressureInput = bme.pressure;
+
   uint8_t pressure[sizeof(pressureInput)];
   pressure[0] = PRESSURE_HEADER;
   convertRounding(pressureInput, pressure);
-  sendData(pressure, sizeof(pressure));   
-
   Serial.print("Pressure: ");
   Serial.println(pressureInput);
-  Serial.println(pressure[1]);
+  sendData(pressure, sizeof(pressure));   
+
+  
+  //Serial.println(pressure[1]);
 
   float receivedTemp;
   memcpy(&receivedTemp, &pressure[1], sizeof(float));
-  Serial.println(receivedTemp);
+ // Serial.println(receivedTemp);
 
 
   // Send Humidity
@@ -163,20 +165,23 @@ void loop() {
   uint8_t dataHumidity[sizeof(humidityInput) + 1];
   dataHumidity[0] = HUMIDITY_HEADER;
   memcpy(&dataHumidity[1], &humidityInput, sizeof(float));
+    Serial.print("Humidity: ");
+  Serial.println(humidityInput);
   sendData(dataHumidity, sizeof(dataHumidity));
 
-  Serial.print("Humidity: ");
-  Serial.println(humidityInput);
+
 
   // Send Gas Data
   uint32_t gasInput = bme.gas_resistance;
   uint8_t gas[sizeof(gasInput)];
   gas[0] = GAS_HEADER;
   convertRounding(gasInput, gas);
-  sendData(gas, sizeof(gas));
-  
+
   Serial.print("Gas Resistance: ");
   Serial.println(gasInput);
+  sendData(gas, sizeof(gas));
+  
+
 
   // Send Voltage Data 
 
@@ -192,7 +197,7 @@ void loop() {
   Serial.print("VBat: " ); 
   Serial.println(measuredvbat);
 
-  */
+  
 
 
 
@@ -200,7 +205,7 @@ void loop() {
 
 
 // OLD send temp 
-
+/*
 float temp = bme.temperature;
 uint8_t data[sizeof(temp)];
 memcpy(data, &temp, sizeof(float));
@@ -209,7 +214,7 @@ rf69.waitPacketSent();
 
 Serial.print("Temperature: ");
 Serial.println(temp);
-
+*/
 //end temp
 
 // OLD start pressure
