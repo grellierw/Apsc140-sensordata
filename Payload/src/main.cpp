@@ -42,11 +42,34 @@ void convertRounding(uint32_t input, uint8_t array[4]) {
 
 void sendData(const uint8_t* data, size_t len) {
    // digitalWrite(RFM69_CS, HIGH);
+    delay(500);
     rf69.send(data, len);
     rf69.waitPacketSent();
     Serial.println("Sent");
-    delay(3000);
+    
    // digitalWrite(RFM69_CS, LOW);
+}
+
+void waitForRX(){
+
+  uint8_t buf[RH_RF69_MAX_MESSAGE_LEN];
+  uint8_t len = sizeof(buf);
+  int time = millis();
+  if (rf69.waitAvailableTimeout(500))
+  { 
+    if (rf69.recv(buf, &len))
+    {
+      Serial.print("got reply: ");
+      Serial.println((char*)buf);
+    }
+    else
+    {
+      delay(1000);
+    }
+  }
+  else
+      delay(1000);
+
 }
 
 
@@ -136,23 +159,28 @@ void loop() {
   Serial.print("Temperature: ");
   Serial.println(tempInput); // Copy the temperature data
   sendData(dataTemp, sizeof(dataTemp));
-              
+  waitForRX();            
   //digitalWrite(RFM69_CS, HIGH);
        // rf69.send(dataTemp, sizeof(dataTemp));
       //  rf69.waitPacketSent();
   //digitalWrite(RFM69_CS, LOW);
   
   // Send pressure  
-  uint32_t pressureInput = bme.pressure;
+  uint32_t pressurebme = bme.pressure;
+  
+  float pressureInput = pressurebme;
+  pressureInput = pressureInput / 10000;
 
   uint8_t pressure[sizeof(pressureInput)];
   pressure[0] = PRESSURE_HEADER;
-  convertRounding(pressureInput, pressure);
+  //convertRounding(pressureInput, pressure);
+ memcpy(&pressure[1], &pressureInput, sizeof(float));
+
   Serial.print("Pressure: ");
   Serial.println(pressureInput);
   sendData(pressure, sizeof(pressure));   
+  waitForRX();  
 
-  
   //Serial.println(pressure[1]);
 
   float receivedTemp;
@@ -168,19 +196,31 @@ void loop() {
     Serial.print("Humidity: ");
   Serial.println(humidityInput);
   sendData(dataHumidity, sizeof(dataHumidity));
+  waitForRX();  
+
+
+
+
+
+
 
 
 
   // Send Gas Data
-  uint32_t gasInput = bme.gas_resistance;
+  uint32_t gasbme = bme.gas_resistance;
+  float gasInput = (float)gasbme;
+  gasInput = gasInput / 1000;
+
   uint8_t gas[sizeof(gasInput)];
   gas[0] = GAS_HEADER;
-  convertRounding(gasInput, gas);
+  //convertRounding(gasInput, gas);
+  memcpy(&gas[1], &gasInput, sizeof(float));
 
   Serial.print("Gas Resistance: ");
   Serial.println(gasInput);
+  Serial.println(gasbme);
   sendData(gas, sizeof(gas));
-  
+  waitForRX();  
 
 
   // Send Voltage Data 
@@ -189,11 +229,12 @@ void loop() {
   measuredvbat *= 2; // we divided by 2, so multiply back
   measuredvbat *= 3.3; // Multiply by 3.3V, our reference voltage
   measuredvbat /= 1024; // convert to voltage
+
   uint8_t dataVoltage[sizeof(measuredvbat) + 1];
   dataVoltage[0] = VOLTAGE_HEADER;
   memcpy(&dataVoltage[1], &measuredvbat, sizeof(float));
   sendData(dataVoltage, sizeof(dataVoltage));
-
+  waitForRX();  
   Serial.print("VBat: " ); 
   Serial.println(measuredvbat);
 
@@ -229,43 +270,7 @@ rf69.waitPacketSent();
 // end pressure
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
   Serial.print("rssi: "); Serial.println(rf69.lastRssi());
 
 
-  uint8_t buf[RH_RF69_MAX_MESSAGE_LEN];
-  uint8_t len = sizeof(buf);
-
-  if (rf69.waitAvailableTimeout(500))
-  { 
-    // Should be a reply message for us now   
-    if (rf69.recv(buf, &len))
-    {
-      Serial.print("got reply: ");
-      Serial.println((char*)buf);
-    }
-    else
-    {
-      Serial.println("recv failed");
-    }
-  }
-  else
-  {
-    Serial.println("No reply, is rf69_server running?");
-  }
-
-
-  delay(1000);
 }

@@ -1,228 +1,152 @@
-// rf69 demo tx rx.pde
-// -*- mode: C++ -*-
-// Example sketch showing how to create a simple messageing client
-// with the RH_RF69 class. RH_RF69 class does not provide for addressing or
-// reliability, so you should only use RH_RF69  if you do not need the higher
-// level messaging abilities.
-// It is designed to work with the other example rf69_server.
-// Demonstrates the use of AES encryption, setting the frequency and modem 
-// configuration
-
-//#include <fstream> //for printing to txt
 #include <SPI.h>
 #include <RH_RF69.h>
 
-/************ Radio Setup ***************/
+#define FREQUENCY       915.0
+#define CS_PIN          A5
+#define INT_PIN         1
+#define RST_PIN         A3
+#define LED_PIN         8
 
-// Change to 434.0 or other frequency, must match RX's freq!
-#define RF69_FREQ       915.0
-
-// Feather 32u4 w/Radio
-  #define RFM69_CS      A5
-  #define RFM69_INT     1
-  #define RFM69_RST     A3
-  #define LED           8
-
-//define headers for each measurement
+// Header definitions for each measurement
 #define TEMP_HEADER      0x01
 #define PRESSURE_HEADER  0x02
 #define HUMIDITY_HEADER  0x03
 #define GAS_HEADER       0x04
 #define VOLTAGE_HEADER   0x05
 
-// Singleton instance of the radio driver
-RH_RF69 rf69(RFM69_CS, RFM69_INT);
+// Radio driver instance
+RH_RF69 rf69(CS_PIN, INT_PIN);
 
-int16_t packetnum = 0;  // packet counter, we increment per xmission
+int16_t packetNum = 0;
 
-using namespace std; //for printing to txt
+void Blink(byte pin, byte delayMs, byte loops);
 
-void Blink(byte PIN, byte DELAY_MS, byte loops);
-
-void setup() 
+void setup()
 {
   Serial.begin(9600);
-  while (!Serial) { delay(1); } // wait until serial console is open, remove if not tethered to computer
 
-  pinMode(LED, OUTPUT);     
-  pinMode(RFM69_RST, OUTPUT);
-  digitalWrite(RFM69_RST, LOW);
+  // Wait until serial console is open
+  while (!Serial);
+
+  pinMode(LED_PIN, OUTPUT);
+  pinMode(RST_PIN, OUTPUT);
+  digitalWrite(RST_PIN, LOW);
 
   Serial.println("Feather RFM69 RX Test!");
-  Serial.println();
 
-  // manual reset
-  digitalWrite(RFM69_RST, HIGH);
+  // Manual reset
+  digitalWrite(RST_PIN, HIGH);
   delay(10);
-  digitalWrite(RFM69_RST, LOW);
+  digitalWrite(RST_PIN, LOW);
   delay(10);
-  
+
   if (!rf69.init()) {
     Serial.println("RFM69 radio init failed");
     while (1);
   }
-  Serial.println("RFM69 radio init OK!");
   
+  Serial.println("RFM69 radio init OK!");
 
-  if (!rf69.setFrequency(RF69_FREQ)) {
+  if (!rf69.setFrequency(FREQUENCY)) {
     Serial.println("setFrequency failed");
   }
 
   // If you are using a high power RF69 eg RFM69HW, you *must* set a Tx power with the
   // ishighpowermodule flag set like this:
-  rf69.setTxPower(20, true);  // range from 14-20 for power, 2nd arg must be true for 69HCW
+  rf69.setTxPower(20, true);
 
-  
-  pinMode(LED, OUTPUT);
-
-  Serial.print("RFM69 radio @");  Serial.print((int)RF69_FREQ);  Serial.println(" MHz");
+  Serial.print("RFM69 radio @ ");  
+  Serial.print((int)FREQUENCY);  
+  Serial.println(" MHz");
 }
 
 
+// Loop through and receive data
 void loop() {
   int count = 0;
-  //Serial.println("help");
- 
+  uint8_t buf[RH_RF69_MAX_MESSAGE_LEN];
+  uint8_t len = sizeof(buf);
 
-   // outfile << "This is a test" << endl;
- 
-     //OLD CODE
-     /*
-     if (rf69.available()) {
-     uint8_t buf[RH_RF69_MAX_MESSAGE_LEN];        //creates variable to store incoming data 
-     uint8_t len = sizeof(buf);			              //creates variable to store length of data
-    
-      if (rf69.recv(buf, &len)) { 		           	//receives information
+  // Wait for a message with a timeout of 500 milliseconds
+  if (rf69.waitAvailableTimeout(500)) {
 
-      if (!len) return;
-      buf[len] = 0;
-      
-      // Receiving Pressure
-      /* uint32_t pressure;			                    // Variable for pressure
-      memcpy(&pressure, buf, sizeof(uint32_t));   // Converts from uint8_t to a uint32_t
-      Serial.print("Received pressure:");
-      Serial.println(pressure);
-      *
-      // Receiving Temperature
-      float temp;					                  // Variable for temperature
-      memcpy(&temp, buf, sizeof(float));		// Converts from uint8_t to a float 
-      Serial.print("Received temperature:");
-      Serial.println(temp);
-      						
-      Serial.print("RSSI: ");				        // Prints the Radio Signal Strength
-      Serial.println(rf69.lastRssi(), DEC);
+    // Receive the message
+    if (rf69.recv(buf, &len)) {
+      uint8_t header = buf[0];
 
+      // Check the header to determine what type of data was received
+      switch (header) {
+        case TEMP_HEADER:
+          // Extract temperature data from the message
+          float tempData;
+          memcpy(&tempData, buf + 1, sizeof(float));
+          Serial.print("temperature:");
+          Serial.print(tempData);
+          Serial.print(",");
+          break;
+
+        case PRESSURE_HEADER:
+          // Extract pressure data from the message
+          float pressureData;
+          memcpy(&pressureData, buf + 1, sizeof(uint32_t));
+          Serial.print("pressure:");
+          Serial.print(pressureData);
+          Serial.print(",");
+          break;
+
+        case HUMIDITY_HEADER:
+          // Extract humidity data from the message
+          float humidityData;
+          memcpy(&humidityData, buf + 1, sizeof(float));
+          Serial.print("humidity:");
+          Serial.print(humidityData);
+          Serial.print(",");
+          break;
+
+        case GAS_HEADER:
+          // Extract gas data from the message
+          float gasData;
+          memcpy(&gasData, buf + 1, sizeof(uint32_t));
+          Serial.print("Gas:");
+          Serial.print(gasData);
+          Serial.print(",");
+          break;
+
+        case VOLTAGE_HEADER:
+          // Extract voltage data from the message
+          float voltageData;
+          memcpy(&voltageData, buf + 1, sizeof(uint32_t));
+          Serial.print("Battery:");
+          Serial.print(voltageData);
+          Serial.print(",");
+          count = 1;
+          break;
+
+        default:
+          Serial.println("No preamble");
+          break;
       }
-      else {
-      Serial.println("Receive failed");
-      } 
-     
-*/ //old code end
-uint8_t buf[RH_RF69_MAX_MESSAGE_LEN];
-uint8_t len = sizeof(buf);
-bool hasReceived = false;
-if (rf69.waitAvailableTimeout(500)) {
 
-
-  // Should be a reply message for us now   
-  if (rf69.recv(buf, &len))
-  {
-    uint8_t header = buf[0];
-    switch (header) {
-      case TEMP_HEADER:
-        // Extract temperature data from the rest of the byte array
-        float tempData;
-        memcpy(&tempData, buf + 1, sizeof(float));
-        // Do something with the temperature data
-        Serial.print("temperature:");
-        Serial.print(tempData);
-        Serial.print(",");
-        break;
-
-      case PRESSURE_HEADER:
-        // Extract pressure data from the rest of the byte array
-        uint32_t pressureData;
-        memcpy(&pressureData, buf + 1, sizeof(uint32_t));
-        Serial.print("pressure:");
-        Serial.print(pressureData/1090610000);
-        Serial.print(",");
-        // Do something with the pressure data
-        break;
-
-      case HUMIDITY_HEADER:
-        // Extract humidity data from the rest of the byte array
-        float humidityData;
-        memcpy(&humidityData, buf + 1, sizeof(float));
-        // Do something with the humidity data
-        Serial.print("humidity:");
-        Serial.print(humidityData);
-        Serial.print(",");
-        break;
-
-      case GAS_HEADER:
-        // Extract gas data from the rest of the byte array
-        uint32_t gasData;
-        memcpy(&gasData, buf + 1, sizeof(uint32_t));
-        // Do something with the gas data
-        Serial.print("Gas:");
-        Serial.print(gasData/1090610000);
-        Serial.print(",");
-        break;
-
-      case VOLTAGE_HEADER:
-
-        uint32_t voltageData;
-        memcpy(&voltageData, buf + 1, sizeof(uint32_t));
-        Serial.print("Battery:");
-        Serial.print(voltageData/1090610000);
-        Serial.print(",");
-        count = 1;
-        break;
-
-      default:
-         Serial.println("No preamble");
-        break;
-    }
-      // Prints the Radio Signal Strength
-      
-  }
-} //else
-   // Serial.println("recv failed");
-
-
-
-
-
-    
-  if (count == 1)
-  {
+      // Print the radio signal strength
+      if (count == 1) {
         Serial.println("");
-
         Serial.print("RSSI:");
-      Serial.print(rf69.lastRssi(), DEC);
-      Serial.print(",");
-       uint8_t data[] = "RX";
+        Serial.print(abs(rf69.lastRssi()), DEC);
+        Serial.print(",");
+        uint8_t data[] = "RX";
         rf69.send(data, sizeof(data));
         rf69.waitPacketSent();
-        //Serial.println("Sent a reply");
-        //Serial.println("");
-    
+      }
+    }
   }
 
+  // Blink an LED
+  if (count == 1) {
+    Blink(LED_PIN, 40, 3); //blink LED 3 times, 40ms between blinks
+  }
+}
 
-      
-        // Send a reply!
-       
-        Blink(LED, 40, 3); //blink LED 3 times, 40ms between blinks
-     }
-    
-     
-
-   // outfile.close(); 
-  
-
-
-
+// Function to blink an LED
 void Blink(byte PIN, byte DELAY_MS, byte loops) {
   for (byte i=0; i<loops; i++)  {
     digitalWrite(PIN,HIGH);
@@ -230,5 +154,4 @@ void Blink(byte PIN, byte DELAY_MS, byte loops) {
     digitalWrite(PIN,LOW);
     delay(DELAY_MS);
   }
-  
 }
