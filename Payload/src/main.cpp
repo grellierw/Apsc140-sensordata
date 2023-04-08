@@ -94,20 +94,20 @@ void setup() {
   initBME680();
 }
 
-/******************LOOP*******************/
-
 void loop() {
-
   // Update BME data variables
   bme.performReading();
+
+  // Create file on the SD card
+  File dataFile = SD.open("data.txt", FILE_WRITE);
 
   // Send temperature data
   float tempInput = bme.temperature;
   uint8_t dataTemp[sizeof(tempInput) + 1];
   dataTemp[0] = TEMP_HEADER;
   memcpy(&dataTemp[1], &tempInput, sizeof(float));
-  Serial.print("Temperature: ");
-  Serial.println(tempInput);
+  dataFile.print(tempInput);
+  dataFile.print(",");
   sendData(dataTemp, sizeof(dataTemp));
   waitForRX();
 
@@ -117,8 +117,8 @@ void loop() {
   uint8_t pressure[sizeof(float) + 1];
   pressure[0] = PRESSURE_HEADER;
   memcpy(&pressure[1], &pressureInput, sizeof(float));
-  Serial.print("Pressure: ");
-  Serial.println(pressureInput);
+  dataFile.print(pressureInput);
+  dataFile.print(",");
   sendData(pressure, sizeof(pressure));
   waitForRX();
 
@@ -127,8 +127,8 @@ void loop() {
   uint8_t dataHumidity[sizeof(humidityInput) + 1];
   dataHumidity[0] = HUMIDITY_HEADER;
   memcpy(&dataHumidity[1], &humidityInput, sizeof(float));
-  Serial.print("Humidity: ");
-  Serial.println(humidityInput);
+  dataFile.print(humidityInput);
+  dataFile.print(",");
   sendData(dataHumidity, sizeof(dataHumidity));
   waitForRX();
 
@@ -138,8 +138,8 @@ void loop() {
   uint8_t gas[sizeof(float) + 1];
   gas[0] = GAS_HEADER;
   memcpy(&gas[1], &gasInput, sizeof(float));
-  Serial.print("Gas Resistance: ");
-  Serial.println(gasInput);
+  dataFile.print(gasInput);
+  dataFile.print(",");
   sendData(gas, sizeof(gas));
   waitForRX();
 
@@ -148,11 +148,14 @@ void loop() {
   uint8_t dataVoltage[sizeof(measuredVBat) + 1];
   dataVoltage[0] = VOLTAGE_HEADER;
   memcpy(&dataVoltage[1], &measuredVBat, sizeof(float));
-  Serial.print("VBat: ");
-  Serial.println(measuredVBat);
+  dataFile.print(measuredVBat);
+  dataFile.print(",");
   sendData(dataVoltage, sizeof(dataVoltage));
   waitForRX();
 
-  Serial.print("RSSI: ");
-  Serial.println(rf69.lastRssi());
+  dataFile.print(rf69.lastRssi());
+  dataFile.println(",");
+
+  // Close the file
+  dataFile.close();
 }
